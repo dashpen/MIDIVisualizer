@@ -74,14 +74,42 @@ function playMidi(e){
     FORGET
     !!!
     */
-    console.log(format, numTracks)
-    const headerOffset = view.getUint32(4, false)
-    console.log(view.getUint32(headerOffset + 4 + 4, false))
-    const firstOffset = view.getUint32(headerOffset + 12, false)
-    console.log(firstOffset)
-    const secondOffset = view.getUint32(headerOffset + 20 + firstOffset, false)
-    console.log(secondOffset)
-    const thirdOffset = view.getUint32(headerOffset + 28 + firstOffset + secondOffset, false)
-    console.log(thirdOffset)
-    document.getElementById("textField").innerHTML = hexString
+
+    let givenPosition = 18;
+
+    let midiEvents = new Array(numTracks)
+
+    console.log(numTracks)
+    // main loop for midi tracks
+    for(let i = 0; i < numTracks; i++){
+        const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
+        console.log("length: " + length)
+        givenPosition += 4
+        let j = 0
+        while(j < length){
+            console.log("position:" + (givenPosition + j))
+            const firstBytes = view.getUint8(givenPosition + j)
+            console.log(firstBytes)
+            j++
+        }
+        console.log("length: " + length)
+        console.log("GivenPosition: " + givenPosition)
+
+        givenPosition += length + 4
+    }
+
+
+
+
+
+    // console.log(format, numTracks)
+    // const headerOffset = view.getUint32(4, false)
+    // console.log(view.getUint32(headerOffset + 4 + 4, false))
+    // const firstOffset = view.getUint32(headerOffset + 12, false)
+    // console.log(firstOffset)
+    // const secondOffset = view.getUint32(headerOffset + 20 + firstOffset, false)
+    // console.log(secondOffset)
+    // const thirdOffset = view.getUint32(headerOffset + 28 + firstOffset + secondOffset, false)
+    // console.log(thirdOffset)
+    // document.getElementById("textField").innerHTML = hexString
 }
