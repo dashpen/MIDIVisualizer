@@ -77,27 +77,103 @@ function playMidi(e){
 
     let givenPosition = 18;
 
-    let midiEvents = new Array(numTracks)
+    // var midiEvents = new Array(numTracks)
+    var midiEvents = []
+
+    const metaEventObject = {
+        0: () => {console.log("HI!")}
+    }
 
     console.log(numTracks)
     // main loop for midi tracks
     for(let i = 0; i < numTracks; i++){
         const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
         console.log("length: " + length)
-        givenPosition += 4
-        let j = 0
-        while(j < length){
-            console.log("position:" + (givenPosition + j))
-            const firstBytes = view.getUint8(givenPosition + j)
-            console.log(firstBytes)
+        givenPosition += 4 // skips over the bytes describing the length
+        let midiTrack = [] // stores midi events for the current track
+        let j = givenPosition
+        while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
+            // console.log("position:" + (curPos))
+            const delay = view.getUint8(j, false) // first 2 bytes of an event are supposed to be a delay
+            const dataByte1 = view.getUint8(j + 2, false)
+            // console.log(`J :${j} delay:${delay}`)
+            // console.log("dataByte1: " + dataByte1)
+            if(dataByte1 === 255) { // check for meta-events
+                const dataByte2 = view.getUint8(j + 4, false)
+                let metaEventObj = {
+                    delay: delay,
+                    type: "",
+                    text: ""
+                }
+                if(dataByte2 < 8){
+                    const textLength = view.getUint8(j + 6, false)
+                    const text = new Int8Array(buffer, j + 8, textLength) // gets text as an array of ints to be processed later
+                    metaEventObj.text = text
+                    j += 8 + textLength
+                }
+                switch (dataByte2) {
+                    case 0:
+                        // sequence number
+                        j++
+                        break;
+                    case 1:
+                        metaEventObj.type = "text"
+                        break;
+                    case 2: // basically the same as a text event
+                        metaEventObj.type = "copyright"
+                        break;
+                    case 3:
+                        let trackTitleObjType = ""
+                        if(format === 0 || (i === 0 && format === 1)){
+                            trackTitleObjType = "Squence Name"
+                        } else {
+                            trackTitleObjType = "Track Name"
+                        }
+                        metaEventObj.type = trackTitleObjType
+                        break;
+                    case 4:
+                        metaEventObj.type = "instrument name"
+                        break;
+                    case 5:
+                        metaEventObj.type = "lyric"
+                        break;
+                    case 6:
+                        metaEventObj.type = "marker"
+                        break;
+                    case 7: 
+                        metaEventObj.type = "cue"
+                        break;
+                    case 8:
+                        const channelPrefixChannel = view.getUint8(j + 6, false)
+                        metaEventObj.text = channelPrefixChannel
+                        metaEventObj.type = "channel prefix"
+                        j += 6;
+                        break;
+                    case 81:
+                        const tempTempo = view.getUint32(j + 4, false) - 50331648
+                        metaEventObj.type = "tempo"
+                        metaEventObj.text = tempTempo
+                    case 47:
+                        // end of track
+                        console.log("END OF TRACK")
+                        j = length + givenPosition;
+                        break;
+                    default:
+                        j++
+                        break;
+                }
+                midiTrack.push(midiEventObj) // adds midi event to the array
+            }
+            // console.log(firstBytes)
             j++
         }
+        midiEvents.push(midiTrack)
+        console.log(midiEvents)
         console.log("length: " + length)
         console.log("GivenPosition: " + givenPosition)
 
         givenPosition += length + 4
     }
-
 
 
 
