@@ -1,29 +1,45 @@
 import * as THREE from 'three';
+import {note} from '../js/notes.js'
 
-const scene = new THREE.Scene()
+export const scene = new THREE.Scene()
 const canvas = document.getElementById("canvas")
 const renderer = new THREE.WebGLRenderer({
     canvas,
     // alpha: true,
     antialias:true
 });
-const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 100)
+// const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 100) // perspective camera
+let width = 50
+let height = 50
+// 50/50 for testing, 175/30 for later
+// let width = 175
+// let height = 30
+let camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 1, 1000) // orthrographic camera
+
+function updateCamera(){
+    // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 1, 1000)
+    console.log(`width: ${width}`)
+    console.log(`height: ${height}`)
+    // scene.add(camera)
+    camera.left = width / - 2
+    camera.right = width / 2
+    camera.top = height / 2
+    camera.bottom = height / - 2
+    camera.updateProjectionMatrix()
+}
+
 camera.position.z = 20
-// camera.rotation.y += Math.PI/2
-// camera.position.y += 1
 scene.add(camera)
 const keyboard = new THREE.Object3D()
 const light = new THREE.AmbientLight(0xFFFFFF, 1)
 scene.add(light)
 const noteGeometry = new THREE.BoxGeometry(2, 5, 1)
-const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
-// const noteMesh = new THREE.Mesh(noteGeometry, noteMaterial)
+export const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
 
-// const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
-
-for(let i = 0; i < 8; i++){
+const numNotes = 88
+for(let i = 0; i < numNotes; i++){
     const noteMesh = new THREE.Mesh(noteGeometry, noteMaterial)
-    noteMesh.position.x = -7 + 2 * i
+    noteMesh.position.x = -numNotes + 1 + 2 * i
     keyboard.add(noteMesh)
 }
 scene.add(keyboard)
@@ -33,6 +49,7 @@ scene.add(keyboard)
 renderer.render(scene, camera)
 
 document.addEventListener("keydown", (event) => {
+    updateCamera()
     if(event.keyCode == 37){
         camera.position.x += -0.1
     } else if(event.keyCode == 39){
@@ -46,9 +63,24 @@ document.addEventListener("keydown", (event) => {
     renderer.render(scene, camera)
 })
 
+document.getElementById("width").addEventListener("input", ()=> {
+    width = document.getElementById("width").value
+    width = parseInt(width)
+    updateCamera()
+})
+document.getElementById("height").addEventListener("input", ()=> {
+    height = document.getElementById("height").value
+    height = parseInt(height)
+    updateCamera()
+})
+
+let firstNote = new note(0, 1)
+firstNote.generateObject()
+
 function render(){
-    keyboard.rotation.x += 0.01
+    // keyboard.rotation.x += 0.01
+    firstNote.moveDown()
     renderer.render(scene, camera)
     requestAnimationFrame(render)
 }
-// requestAnimationFrame(render)
+requestAnimationFrame(render)
