@@ -27,7 +27,7 @@ export class note {
     }
 
     turnOff(){
-        
+        this.object.position.y -= 0.1
     }
 
     moveDown(){

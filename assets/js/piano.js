@@ -86,7 +86,11 @@ firstNote.generateObject()
 let i = 0
 function render(){
     i++
-    firstNote.moveDown()
+    if(i > 50){
+        firstNote.turnOff()
+    } else {
+        firstNote.moveDown()
+    }
     renderer.render(scene, camera)
     requestAnimationFrame(render)
 }
