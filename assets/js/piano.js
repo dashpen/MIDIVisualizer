@@ -33,14 +33,20 @@ scene.add(camera)
 const keyboard = new THREE.Object3D()
 const light = new THREE.AmbientLight(0xFFFFFF, 1)
 scene.add(light)
-const noteGeometry = new THREE.BoxGeometry(2, 5, 1)
+const noteGeometry = new THREE.BoxGeometry(1.8, 4.8, 1.1)
+const noteBorderGeometry = new THREE.BoxGeometry(2, 5, 1)
 export const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
+const noteBorderMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
 
-const numNotes = 88
+const numNotes = 8
 for(let i = 0; i < numNotes; i++){
     const noteMesh = new THREE.Mesh(noteGeometry, noteMaterial)
-    noteMesh.position.x = -numNotes + 1 + 2 * i
-    keyboard.add(noteMesh)
+    const noteBorderMesh = new THREE.Mesh(noteBorderGeometry, noteBorderMaterial)
+    const note = new THREE.Object3D()
+    note.add(noteMesh)
+    note.add(noteBorderMesh)
+    note.position.x = -numNotes + 1 + 2 * i
+    keyboard.add(note)
 }
 scene.add(keyboard)
 

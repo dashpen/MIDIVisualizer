@@ -13,14 +13,19 @@ export class note {
     }
 
     generateObject(){
-        const box = new THREE.BoxGeometry(1, 2, 1)
+        const box = new THREE.PlaneGeometry(1, 2)
         this.object = new THREE.Mesh(box, noteMaterial)
         this.object.position.x = note * 2 + 1
-        this.object.position.y = 10
+        this.object.position.y = 1
         scene.add(this.object)
     }
 
+    turnOff(){
+
+    }
+
     moveDown(){
+
         this.object.position.y -= 0.1
     }
 }
