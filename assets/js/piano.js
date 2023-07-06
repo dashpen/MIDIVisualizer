@@ -9,26 +9,26 @@ const renderer = new THREE.WebGLRenderer({
     antialias:true
 });
 // const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 100) // perspective camera
-let width = 50
-let height = 50
+let cameraWidth = 50
+export let cameraHeight = 50
 // 50/50 for testing, 175/30 for later
-// let width = 175
-// let height = 30
-let camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 1, 1000) // orthrographic camera
+// let cameraWidth = 175
+// let cameraHeight = 30
+let camera = new THREE.OrthographicCamera(cameraWidth / - 2, cameraWidth / 2, cameraHeight / 2, cameraHeight / - 2, 1, 1000) // orthrographic camera
 
 function updateCamera(){
-    // camera = new THREE.OrthographicCamera(width / - 2, width / 2, height / 2, height / - 2, 1, 1000)
-    console.log(`width: ${width}`)
-    console.log(`height: ${height}`)
+    console.log(`width: ${cameraWidth}`)
+    console.log(`height: ${cameraHeight}`)
     // scene.add(camera)
-    camera.left = width / - 2
-    camera.right = width / 2
-    camera.top = height / 2
-    camera.bottom = height / - 2
+    camera.left = cameraWidth / - 2
+    camera.right = cameraWidth / 2
+    camera.top = cameraHeight / 2
+    camera.bottom = cameraHeight / - 2
     camera.updateProjectionMatrix()
 }
 
 camera.position.z = 20
+camera.position.y = (cameraHeight - 5)/2
 scene.add(camera)
 const keyboard = new THREE.Object3D()
 const light = new THREE.AmbientLight(0xFFFFFF, 1)
@@ -70,21 +70,22 @@ document.addEventListener("keydown", (event) => {
 })
 
 document.getElementById("width").addEventListener("input", ()=> {
-    width = document.getElementById("width").value
-    width = parseInt(width)
+    cameraWidth = document.getElementById("width").value
+    cameraWidth = parseInt(cameraWidth)
     updateCamera()
 })
+
 document.getElementById("height").addEventListener("input", ()=> {
-    height = document.getElementById("height").value
-    height = parseInt(height)
+    cameraHeight = document.getElementById("height").value
+    cameraHeight = parseInt(cameraHeight)
     updateCamera()
 })
 
 let firstNote = new note(0, 1)
 firstNote.generateObject()
-
+let i = 0
 function render(){
-    // keyboard.rotation.x += 0.01
+    i++
     firstNote.moveDown()
     renderer.render(scene, camera)
     requestAnimationFrame(render)
