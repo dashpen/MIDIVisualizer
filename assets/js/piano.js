@@ -82,14 +82,19 @@ document.getElementById("height").addEventListener("input", ()=> {
 })
 
 let firstNote = new note(0, 1)
-firstNote.generateObject()
+let secondNote = new note(1, 1)
 let i = 0
 function render(){
     i++
-    if(i > 50){
-        firstNote.turnOff()
-    } else {
+    if(i < 50){
         firstNote.moveDown()
+    } else {
+        firstNote.turnOff()
+    }
+    if(i < 80){
+        secondNote.moveDown()
+    } else {
+        secondNote.turnOff()
     }
     renderer.render(scene, camera)
     requestAnimationFrame(render)

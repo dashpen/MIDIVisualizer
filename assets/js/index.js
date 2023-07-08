@@ -43,7 +43,106 @@ function arrayBufferToHexString(buffer) {
   
     return hexString;
   }
+
 function playMidi(e){
+    const buffer = e.target.result // binary data
+    const view = new DataView(buffer) // way to interact with binary data
+    const headerText = view.getUint32(0, false)
+    if(headerText !== 1297377380){ // checks if the first 4 bytes are a u32int representation of MThd
+        alert("Invalid MIDI file")
+        return
+    }
+    const format = view.getUint16(8, false) // format is either 0, 1, or 2
+    const numTracks = view.getUint16(10, false) // number of MTrks in the file
+    const rawDivisions = view.getUint16(12, false)
+    let givenPosition = 18; // skips the header chunk
+
+    // for(let i = 0; i < numTracks; i++){
+    for(let i = 0; i < 1; i++){
+        const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
+        console.log("length: " + length)
+        givenPosition += 4 // skips over the bytes describing the length
+        // let midiTrack = [] // stores midi events for the current track
+        let j = givenPosition
+        // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
+        while(j < 500){ // last three bytes are supposed to signal the end of the track
+            // console.log("position:" + (curPos))
+
+            const delay = view.getUint8(j, false) // first 1 byte of an event are supposed to be a delay
+            const dataByte1 = view.getUint8(j + 1, false)
+            // console.log("delay " + delay.toString(16))
+            // console.log("current value "+ dataByte1.toString(16))
+            // console.log("j " + j)
+            // console.log(`J :${j} delay:${delay}`)
+            // console.log("dataByte1: " + dataByte1)
+            if(dataByte1 === 255) {
+                // meta events (ignoring for now)
+                const length = view.getUint8(j + 3, false) // length of meta event
+                console.log("Meta Event with length "+ length)
+                j += (length === 0 ? 2 : length + 4)
+                continue;
+            }
+            if(dataByte1 > 127){
+                // data byte
+                const eventType = dataByte1 >> 4
+                console.log("event type " + eventType)
+                const channel = dataByte1 & 0xf // last 4 bits are channel
+                console.log("channel "+ channel)
+                switch (eventType) {
+                    case 8:
+                        // note off event
+                        console.log(`Note OFF: ${getNote(view.getUint8(j + 2, false)).note}`)
+                        console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
+                        console.log("j " + j)
+                        j += 4
+                        continue;
+                    case 9:
+                        // note on event
+                        console.log(`Note ON: ${getNote(view.getUint8(j + 2, false)).note}`)
+                        console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
+                        console.log("j " + j)
+                        j += 4
+                        continue;
+                    case 12:
+                        // program change event
+                        const programChange = view.getUint8(j + 2, false)
+                        console.log(programChange === 0 ? "Grand Piano" : "Not piano")
+                        j += 3
+                        console.log("j " + j)
+                        continue;
+                    default:
+                        break;
+                }
+            }
+            // console.log(firstBytes)
+            // console.log("didn't work " + dataByte1.toString(16))
+            // console.log("didn't work j " + j)
+            j++
+        }
+        givenPosition += length + 4
+    }
+}
+
+const notes = {
+    0: "C",
+    1: "C#",
+    2: "D",
+    3: "D#",
+    4: "E",
+    5: "F",
+    6: "F#",
+    7: "G",
+    8: "G#",
+    9: "A",
+    10: "A#",
+    11: "B",
+}
+
+function getNote(number){
+    return {octave: number % 12 - 1, note: notes[number % 12]}
+}
+
+function playMidiLaterFunction(e){
     const buffer = e.target.result
     const view = new DataView(buffer)
     // getting header values
