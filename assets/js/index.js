@@ -63,16 +63,16 @@ function playMidi(e){
         const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
         console.log("length: " + length)
         givenPosition += 4 // skips over the bytes describing the length
-        // let midiTrack = [] // stores midi events for the current track
         let j = givenPosition
         // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
         while(j < 500){ // last three bytes are supposed to signal the end of the track
             // console.log("position:" + (curPos))
             const getDelay = getVariableLength(j)
             const delay = getDelay.delay // delay can be multiple bytes
-            j = getDelay.index - 1
+            j = getDelay.index
             console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
-            const dataByte1 = data[j + 1]
+            const dataByte1 = data[j]
+            j++
             // console.log("delay " + delay.toString(16))
             // console.log("current value "+ dataByte1.toString(16))
             // console.log("j " + j)
@@ -80,37 +80,41 @@ function playMidi(e){
             // console.log("dataByte1: " + dataByte1)
             if(dataByte1 === 0xff) {
                 // meta events (ignoring for now)
-                const length = view.getUint8(j + 3, false) // length of meta event
+                j++
+                const length = data[j] // length of meta event
+                j++
                 console.log("Meta Event with length "+ length)
-                j += (length === 0 ? 2 : length + 4)
+                j += length
                 continue;
             }
             if(dataByte1 & 0x80){
                 // data byte
-                const eventType = dataByte1 >> 4
+                const eventType = dataByte1 >> 4 // first 4 bits are the event type (first bit is always a 1)
                 console.log("event type " + (eventType - 8))
                 const channel = dataByte1 & 0xf // last 4 bits are channel
                 console.log("channel "+ channel)
                 switch (eventType) {
                     case 8:
                         // note off event
-                        console.log(`Note OFF: ${getNote(view.getUint8(j + 2, false))} num: ${view.getUint8(j + 2, false)}`)
-                        console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
+                        console.log(`Note OFF: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
+                        j++
+                        console.log(`Velocity: ${view.getUint8(j, false)}`)
+                        j++
                         console.log("j " + j.toString(16))
-                        j += 4
                         continue;
                     case 9:
                         // note on event
-                        console.log(`Note ON: ${getNote(view.getUint8(j + 2, false))} num: ${view.getUint8(j + 2, false)}`)
-                        console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
+                        console.log(`Note ON: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
+                        j++
+                        console.log(`Velocity: ${view.getUint8(j, false)}`)
+                        j++
                         console.log("j " + j.toString(16))
-                        j += 4
                         continue;
                     case 12:
                         // program change event
-                        const programChange = view.getUint8(j + 2, false)
+                        const programChange = view.getUint8(j, false)
+                        j++
                         console.log(programChange === 0 ? "Grand Piano" : "Not piano")
-                        j += 3
                         console.log("j " + j)
                         continue;
                     default:
