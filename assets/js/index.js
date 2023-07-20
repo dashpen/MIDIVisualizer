@@ -124,22 +124,26 @@ function playMidi(e){
         }
         givenPosition += length + 4
     }
+    // code snippet adapted from http://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html
     function getVariableLength(startIndex){
-        let delay = 0
         let index = startIndex
-        let byte;
-        do{
-            byte = data[index]
-            delay = ((delay << 7) + (byte & 0x7f))
-            index++
-        } while(byte & 0x80)
+        let delay = data[index]
+        index++
+        if(delay & 0x80){
+            let byte;
+            do{
+                byte = data[index]
+                delay = ((delay << 7) + (byte & 0x7f))
+                index++
+            } while(byte & 0x80)
+        }
         return {delay: delay, index: index}
     }
 }
 
 
 
-const notes = {
+const notes = { // midi index for each note (ignores octaves)
     0: "C",
     1: "C#",
     2: "D",
