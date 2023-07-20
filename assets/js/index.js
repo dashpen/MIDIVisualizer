@@ -78,14 +78,14 @@ function playMidi(e){
             // console.log("j " + j)
             // console.log(`J :${j} delay:${delay}`)
             // console.log("dataByte1: " + dataByte1)
-            if(dataByte1 === 0xFF) {
+            if(dataByte1 === 0xff) {
                 // meta events (ignoring for now)
                 const length = view.getUint8(j + 3, false) // length of meta event
                 console.log("Meta Event with length "+ length)
                 j += (length === 0 ? 2 : length + 4)
                 continue;
             }
-            if(dataByte1 > 127){
+            if(dataByte1 & 0x80){
                 // data byte
                 const eventType = dataByte1 >> 4
                 console.log("event type " + (eventType - 8))
@@ -122,7 +122,7 @@ function playMidi(e){
             // console.log("didn't work j " + j)
             j++
         }
-        givenPosition += length + 4
+        givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
     }
     // code snippet adapted from http://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html
     function getVariableLength(startIndex){
