@@ -2,13 +2,13 @@ document.getElementById("midiUpload").onsubmit = async function(event){
     event.preventDefault()
     let fileInput = document.getElementById("upload");
     let file = fileInput.files[0];
-    content = await file
     let reader = new FileReader();
     reader.onload = function(e) {
         // binary data
         console.log(e.target);
-        let hexString = arrayBufferToHexString(e.target.result);
+        // let hexString = arrayBufferToHexString(e.target.result);
         const buffer = e.target.result
+        console.log(buffer[2])
         // for (let i = 0; i < binaryData.length; i++) {
         //     const binaryChar = binaryData.charCodeAt(i).toString(2);
         //     console.log(binaryChar.padStart(8, "0")); // Print each character as binary
@@ -18,12 +18,12 @@ document.getElementById("midiUpload").onsubmit = async function(event){
         //     hexString += binaryChar.padStart(2, "0");
         // }
         // console.log(hexString)
-        const tempStr = hexString.split("");
-        for (let i = 0; i < buffer.byteLength; i++) {
-            if((tempStr[i] == "4") && (tempStr[i+1] == "d") && (tempStr[i+2] == "5") && (tempStr[i+3] == "4")){
-                console.log("MT at " + i)
-            }
-        }
+        // const tempStr = hexString.split("");
+        // for (let i = 0; i < buffer.byteLength; i++) {
+        //     if((tempStr[i] == "4") && (tempStr[i+1] == "d") && (tempStr[i+2] == "5") && (tempStr[i+3] == "4")){
+        //         console.log("MT at " + i)
+        //     }
+        // }
         playMidi(e)
     };
     reader.onerror = function(e) {
@@ -45,8 +45,9 @@ function arrayBufferToHexString(buffer) {
   }
 
 function playMidi(e){
-    const buffer = e.target.result // binary data
-    const view = new DataView(buffer) // way to interact with binary data
+    const buffer = e.target.result // binary data in an arrayBuffer
+    const view = new DataView(buffer) // way to interact with binary data (not using)
+    const data = new Uint8Array(buffer) // typed array with an array of bytes
     const headerText = view.getUint32(0, false)
     if(headerText !== 1297377380){ // checks if the first 4 bytes are a u32int representation of MThd
         alert("Invalid MIDI file")
@@ -67,15 +68,17 @@ function playMidi(e){
         // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
         while(j < 500){ // last three bytes are supposed to signal the end of the track
             // console.log("position:" + (curPos))
-
-            const delay = view.getUint8(j, false) // first 1 byte of an event are supposed to be a delay
-            const dataByte1 = view.getUint8(j + 1, false)
+            const getDelay = getVariableLength(j)
+            const delay = getDelay.delay // delay can be multiple bytes
+            j = getDelay.index - 1
+            console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
+            const dataByte1 = data[j + 1]
             // console.log("delay " + delay.toString(16))
             // console.log("current value "+ dataByte1.toString(16))
             // console.log("j " + j)
             // console.log(`J :${j} delay:${delay}`)
             // console.log("dataByte1: " + dataByte1)
-            if(dataByte1 === 255) {
+            if(dataByte1 === 0xFF) {
                 // meta events (ignoring for now)
                 const length = view.getUint8(j + 3, false) // length of meta event
                 console.log("Meta Event with length "+ length)
@@ -85,22 +88,22 @@ function playMidi(e){
             if(dataByte1 > 127){
                 // data byte
                 const eventType = dataByte1 >> 4
-                console.log("event type " + eventType)
+                console.log("event type " + (eventType - 8))
                 const channel = dataByte1 & 0xf // last 4 bits are channel
                 console.log("channel "+ channel)
                 switch (eventType) {
                     case 8:
                         // note off event
-                        console.log(`Note OFF: ${getNote(view.getUint8(j + 2, false)).note}`)
+                        console.log(`Note OFF: ${getNote(view.getUint8(j + 2, false))} num: ${view.getUint8(j + 2, false)}`)
                         console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
-                        console.log("j " + j)
+                        console.log("j " + j.toString(16))
                         j += 4
                         continue;
                     case 9:
                         // note on event
-                        console.log(`Note ON: ${getNote(view.getUint8(j + 2, false)).note}`)
+                        console.log(`Note ON: ${getNote(view.getUint8(j + 2, false))} num: ${view.getUint8(j + 2, false)}`)
                         console.log(`Velocity: ${view.getUint8(j + 3, false)}`)
-                        console.log("j " + j)
+                        console.log("j " + j.toString(16))
                         j += 4
                         continue;
                     case 12:
@@ -121,7 +124,20 @@ function playMidi(e){
         }
         givenPosition += length + 4
     }
+    function getVariableLength(startIndex){
+        let delay = 0
+        let index = startIndex
+        let byte;
+        do{
+            byte = data[index]
+            delay = ((delay << 7) + (byte & 0x7f))
+            index++
+        } while(byte & 0x80)
+        return {delay: delay, index: index}
+    }
 }
+
+
 
 const notes = {
     0: "C",
@@ -139,7 +155,8 @@ const notes = {
 }
 
 function getNote(number){
-    return {octave: number % 12 - 1, note: notes[number % 12]}
+    const thing = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
+    return `${thing.note}${thing.octave}`
 }
 
 function playMidiLaterFunction(e){
