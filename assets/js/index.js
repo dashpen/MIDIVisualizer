@@ -1,3 +1,5 @@
+
+
 document.getElementById("midiUpload").onsubmit = async function(event){
     event.preventDefault()
     let fileInput = document.getElementById("upload");
@@ -44,6 +46,8 @@ function arrayBufferToHexString(buffer) {
     return hexString;
   }
 
+let channel = 0;
+
 function playMidi(e){
     const buffer = e.target.result // binary data in an arrayBuffer
     const view = new DataView(buffer) // way to interact with binary data (not using)
@@ -63,8 +67,9 @@ function playMidi(e){
         const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
         console.log("length: " + length)
         givenPosition += 4 // skips over the bytes describing the length
-        let j = givenPosition
+        var j = givenPosition
         // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
+        let eventType;
         while(j < 500){ // last three bytes are supposed to signal the end of the track
             // console.log("position:" + (curPos))
             const getDelay = getVariableLength(j)
@@ -89,42 +94,60 @@ function playMidi(e){
             }
             if(dataByte1 & 0x80){
                 // data byte
-                const eventType = dataByte1 >> 4 // first 4 bits are the event type (first bit is always a 1)
-                console.log("event type " + (eventType - 8))
-                const channel = dataByte1 & 0xf // last 4 bits are channel
-                console.log("channel "+ channel)
-                switch (eventType) {
-                    case 8:
-                        // note off event
-                        console.log(`Note OFF: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
-                        j++
-                        console.log(`Velocity: ${view.getUint8(j, false)}`)
-                        j++
-                        console.log("j " + j.toString(16))
-                        continue;
-                    case 9:
-                        // note on event
-                        console.log(`Note ON: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
-                        j++
-                        console.log(`Velocity: ${view.getUint8(j, false)}`)
-                        j++
-                        console.log("j " + j.toString(16))
-                        continue;
-                    case 12:
-                        // program change event
-                        const programChange = view.getUint8(j, false)
-                        j++
-                        console.log(programChange === 0 ? "Grand Piano" : "Not piano")
-                        console.log("j " + j)
-                        continue;
-                    default:
-                        break;
-                }
+                eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
+                channel = dataByte1 & 0xf // last 4 bits are channel
+            } else {
+                j--;
             }
+            // running status means that we don't have to update event type if its the same
+            console.log("event type " + eventType)
+            console.log("channel "+ channel)
+            availableChannels = [0, 1, 2, 3, 4, 5, 6]
+            let validEvent = false
+            availableChannels.forEach((el) => {
+                if(el == eventType){
+                    validEvent = true
+                }
+            })
+            if(validEvent){
+                channelEventTypes[eventType].function(j, data)
+                j += channelEventTypes[eventType].indexToAdd
+            } else {
+                j++
+            }
+            // switch (eventType) {
+            //     case 0:
+            //         // note off event
+            //         console.log(`Note OFF: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
+            //         j++
+            //         console.log(`Velocity: ${view.getUint8(j, false)}`)
+            //         j++
+            //         console.log("j " + j.toString(16))
+            //         continue;
+            //     case 1:
+            //         // note on event
+            //         console.log(`Note ON: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
+            //         j++
+            //         console.log(`Velocity: ${view.getUint8(j, false)}`)
+            //         j++
+            //         console.log("j " + j.toString(16))
+            //         continue;
+            //     case 2:
+            //         j += 2
+            //         continue;
+            //     case 4:
+            //         // program change event
+            //         const programChange = view.getUint8(j, false)
+            //         j++
+            //         console.log(programChange === 0 ? "Grand Piano" : "Not piano")
+            //         console.log("j " + j)
+            //         continue;
+            //     default:
+            //         break;
+            // }
             // console.log(firstBytes)
             // console.log("didn't work " + dataByte1.toString(16))
             // console.log("didn't work j " + j)
-            j++
         }
         givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
     }
@@ -135,17 +158,44 @@ function playMidi(e){
         index++
         if(delay & 0x80){
             let byte;
+            delay &= 0x7f // only first 7 bits are data
             do{
                 byte = data[index]
-                delay = ((delay << 7) + (byte & 0x7f))
+                delay = ((delay << 7) + (byte & 0x7f)) // shifts the data and adds the next 7 bits
                 index++
-            } while(byte & 0x80)
+            } while (byte & 0x80) // last byte starts with bit 0
         }
         return {delay: delay, index: index}
     }
 }
 
+function noteOff(j, data){
+    // runs after a note off event
+    console.log(`Note OFF: ${getNote(data[j])} num: ${data[j]}`)
+    console.log(`Velocity: ${data[j + 1]}`)
+    console.log("j " + j.toString(16))
+}
 
+function noteOn(j, data){
+    // runs after a note on event
+    console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
+    console.log(`Velocity: ${data[j + 1]}`)
+    console.log("j " + j.toString(16))
+}
+
+function doNothing(){
+    // does nothing
+}
+
+const channelEventTypes = {
+    0: {indexToAdd: 2, function: noteOff},
+    1: {indexToAdd: 2, function: noteOn},
+    2: {indexToAdd: 2, function: doNothing}, // Polyphonic Key Pressure (Aftertouch).
+    3: {indexToAdd: 2, function: doNothing}, // Control Change.
+    4: {indexToAdd: 1, function: doNothing}, // Program Change.
+    5: {indexToAdd: 1, function: doNothing}, // Channel Pressure (After-touch).
+    6: {indexToAdd: 2, function: doNothing}, // Pitch Wheel Change.
+}
 
 const notes = { // midi index for each note (ignores octaves)
     0: "C",
@@ -163,8 +213,8 @@ const notes = { // midi index for each note (ignores octaves)
 }
 
 function getNote(number){
-    const thing = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
-    return `${thing.note}${thing.octave}`
+    const noteObj = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
+    return `${noteObj.note}${noteObj.octave}`
 }
 
 function playMidiLaterFunction(e){
