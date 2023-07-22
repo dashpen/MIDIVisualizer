@@ -10,23 +10,8 @@ document.getElementById("midiUpload").onsubmit = async function(event){
         console.log(e.target);
         // let hexString = arrayBufferToHexString(e.target.result);
         const buffer = e.target.result
-        console.log(buffer[2])
-        // for (let i = 0; i < binaryData.length; i++) {
-        //     const binaryChar = binaryData.charCodeAt(i).toString(2);
-        //     console.log(binaryChar.padStart(8, "0")); // Print each character as binary
-        // }
-        // for (let i = 0; i < binaryData.length; i++) {
-        //     const binaryChar = binaryData.charCodeAt(i).toString(16);
-        //     hexString += binaryChar.padStart(2, "0");
-        // }
-        // console.log(hexString)
-        // const tempStr = hexString.split("");
-        // for (let i = 0; i < buffer.byteLength; i++) {
-        //     if((tempStr[i] == "4") && (tempStr[i+1] == "d") && (tempStr[i+2] == "5") && (tempStr[i+3] == "4")){
-        //         console.log("MT at " + i)
-        //     }
-        // }
-        playMidi(e)
+
+        playMidi(buffer)
     };
     reader.onerror = function(e) {
         // error occurred
@@ -48,9 +33,8 @@ function arrayBufferToHexString(buffer) {
 
 let channel = 0;
 
-function playMidi(e){
-    const buffer = e.target.result // binary data in an arrayBuffer
-    const view = new DataView(buffer) // way to interact with binary data (not using)
+function playMidi(buffer){
+    const view = new DataView(buffer) // way to interact with binary data
     const data = new Uint8Array(buffer) // typed array with an array of bytes
     const headerText = view.getUint32(0, false)
     if(headerText !== 1297377380){ // checks if the first 4 bytes are a u32int representation of MThd
@@ -62,8 +46,21 @@ function playMidi(e){
     const rawDivisions = view.getUint16(12, false)
     let givenPosition = 18; // skips the header chunk
 
+    let tracksPos = [22]
+
+    {
+        let i = 18
+        while(i < buffer.byteLength){
+            i += view.getUint32(i, false) + 8
+            tracksPos.push(i)
+        }
+    }
+    tracksPos.pop()
+    
+    console.log(tracksPos)
+
     // for(let i = 0; i < numTracks; i++){
-    for(let i = 0; i < 1; i++){
+    for(let i = 0; i < 0; i++){
         const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
         console.log("length: " + length)
         givenPosition += 4 // skips over the bytes describing the length
@@ -71,18 +68,14 @@ function playMidi(e){
         // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
         let eventType;
         while(j < 500){ // last three bytes are supposed to signal the end of the track
-            // console.log("position:" + (curPos))
+
             const getDelay = getVariableLength(j)
             const delay = getDelay.delay // delay can be multiple bytes
             j = getDelay.index
             console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
             const dataByte1 = data[j]
             j++
-            // console.log("delay " + delay.toString(16))
-            // console.log("current value "+ dataByte1.toString(16))
-            // console.log("j " + j)
-            // console.log(`J :${j} delay:${delay}`)
-            // console.log("dataByte1: " + dataByte1)
+
             if(dataByte1 === 0xff) {
                 // meta events (ignoring for now)
                 j++
@@ -115,39 +108,6 @@ function playMidi(e){
             } else {
                 j++
             }
-            // switch (eventType) {
-            //     case 0:
-            //         // note off event
-            //         console.log(`Note OFF: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
-            //         j++
-            //         console.log(`Velocity: ${view.getUint8(j, false)}`)
-            //         j++
-            //         console.log("j " + j.toString(16))
-            //         continue;
-            //     case 1:
-            //         // note on event
-            //         console.log(`Note ON: ${getNote(view.getUint8(j, false))} num: ${view.getUint8(j, false)}`)
-            //         j++
-            //         console.log(`Velocity: ${view.getUint8(j, false)}`)
-            //         j++
-            //         console.log("j " + j.toString(16))
-            //         continue;
-            //     case 2:
-            //         j += 2
-            //         continue;
-            //     case 4:
-            //         // program change event
-            //         const programChange = view.getUint8(j, false)
-            //         j++
-            //         console.log(programChange === 0 ? "Grand Piano" : "Not piano")
-            //         console.log("j " + j)
-            //         continue;
-            //     default:
-            //         break;
-            // }
-            // console.log(firstBytes)
-            // console.log("didn't work " + dataByte1.toString(16))
-            // console.log("didn't work j " + j)
         }
         givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
     }
