@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {note} from '../js/notes.js'
+import * as LOGIC from '../js/index.js'
 
 export const scene = new THREE.Scene()
 const canvas = document.getElementById("canvas")
@@ -9,11 +10,11 @@ const renderer = new THREE.WebGLRenderer({
     antialias:true
 });
 // const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 100) // perspective camera
-let cameraWidth = 50
-export let cameraHeight = 50
+// let cameraWidth = 50
+// export let cameraHeight = 50
 // 50/50 for testing, 175/30 for later
-// let cameraWidth = 175
-// let cameraHeight = 30
+let cameraWidth = 175
+export let cameraHeight = 50
 let camera = new THREE.OrthographicCamera(cameraWidth / - 2, cameraWidth / 2, cameraHeight / 2, cameraHeight / - 2, 1, 1000) // orthrographic camera
 
 function updateCamera(){
@@ -38,7 +39,7 @@ const noteBorderGeometry = new THREE.BoxGeometry(2, 5, 1)
 export const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
 const noteBorderMaterial = new THREE.MeshBasicMaterial({color: 0x000000})
 
-const numNotes = 8
+const numNotes = 88
 for(let i = 0; i < numNotes; i++){
     const noteMesh = new THREE.Mesh(noteGeometry, noteMaterial)
     const noteBorderMesh = new THREE.Mesh(noteBorderGeometry, noteBorderMaterial)
@@ -81,22 +82,89 @@ document.getElementById("height").addEventListener("input", ()=> {
     updateCamera()
 })
 
-let firstNote = new note(0, 1)
-let secondNote = new note(1, 1)
+// let firstNote = new note(0, 1)
+// let secondNote = new note(1, 1)
 let i = 0
-function render(){
-    i++
-    if(i < 50){
-        firstNote.moveDown()
-    } else {
-        firstNote.turnOff()
+
+export let notes = []
+document.getElementById("canvas").onclick = () => {console.log(notes)}
+document.getElementById("canvas2").onclick = () => {requestAnimationFrame(render2)}
+
+// for(let i = 0; i < 127; i++){
+//     notes[i] = false
+// }
+
+let start = -1
+let del = 0
+export let j = 416
+
+export function render(){
+
+
+    if (start === -1) {
+        start = Date.now()
+        del = LOGIC.getTimeDelay()
     }
-    if(i < 80){
-        secondNote.moveDown()
-    } else {
-        secondNote.turnOff()
+    if(del === 0){
+        j = LOGIC.renderLoop(j)
+        start = -1
+        if(j < 10000){
+            requestAnimationFrame(render)
+        } else{requestAnimationFrame(render2)}
+        return
     }
+    notes.forEach((note) => {
+        // if(note.object.position.y < 0){
+        //     note.remove()
+        //     notes[note.note] = false
+        // }
+        if(note.on){
+            note.moveDown()
+        } else {
+            note.turnOff()
+        }
+    })
+
     renderer.render(scene, camera)
-    requestAnimationFrame(render)
+
+    const elapsed = Date.now() - start
+    if(elapsed > del){
+        j = LOGIC.renderLoop(j)
+        console.log("EL:APSETD " + elapsed)
+        start = -1
+        if(j < 10000){
+            requestAnimationFrame(render)
+        } else{requestAnimationFrame(render2)}
+    } else {
+        requestAnimationFrame(render)
+        // render()
+    }
 }
-requestAnimationFrame(render)
+// requestAnimationFrame(render)
+
+export function render2(){
+
+    let curNote
+
+    for(let i = 0; i < 127; i++){
+
+        curNote = notes[i]
+
+        if(!(curNote)) continue
+
+        // if(note.object.position.y < 0){
+        //     note.remove()
+        //     notes[note.note] = false
+        //     continue
+        // }
+
+        if(curNote.on){
+            curNote.moveDown()
+        } else {
+            curNote.turnOff()
+        }
+    }
+
+    renderer.render(scene, camera)
+    requestAnimationFrame(render2)
+}

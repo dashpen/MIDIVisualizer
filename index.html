@@ -12,4 +12,12 @@
         <p id="textField">This is Text</p>
     </body>
 </html>
-<script src="assets/js/index.js"></script>
+<script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.152.2/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.152.2/examples/jsm/"
+      }
+    }
+</script>
+<script src="assets/js/index.js" type="module"></script>

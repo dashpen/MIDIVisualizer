@@ -1,4 +1,9 @@
+import * as PIANO from '../js/piano.js'
+import * as NOTE from '../js/notes.js'
 
+let midiBuffer;
+let midiDataView;
+let midiArray;
 
 document.getElementById("midiUpload").onsubmit = async function(event){
     event.preventDefault()
@@ -10,8 +15,10 @@ document.getElementById("midiUpload").onsubmit = async function(event){
         console.log(e.target);
         // let hexString = arrayBufferToHexString(e.target.result);
         const buffer = e.target.result
-
-        playMidi(buffer)
+        midiBuffer = buffer
+        midiDataView = new DataView(buffer) // way to interact with binary data
+        midiArray = new Uint8Array(buffer) // typed array with an array of bytes
+        // playMidi(buffer)
     };
     reader.onerror = function(e) {
         // error occurred
@@ -19,19 +26,24 @@ document.getElementById("midiUpload").onsubmit = async function(event){
     };
     reader.readAsArrayBuffer(file);
 }
-function arrayBufferToHexString(buffer) {
-    const uint8Array = new Uint8Array(buffer);
-    let hexString = '';
-  
-    for (let i = 0; i < uint8Array.length; i++) {
-      const hexValue = uint8Array[i].toString(16).padStart(2, '0');
-      hexString += hexValue;
-    }
-  
-    return hexString;
-  }
 
 let channel = 0;
+export let delay = 0;
+let tempo = 500000;
+
+export function getTimeDelay() {
+    const beats = delay/480
+    return beats * 270
+}
+
+document.getElementById("buttone2").addEventListener('click', playMid)
+document.getElementById("buttone3").addEventListener('click', getTimeDelay)
+
+function playMid(){
+    // playMidi(midiBuffer)
+    // renderLoop(PIANO.render)
+    PIANO.render()
+}
 
 function playMidi(buffer){
     const view = new DataView(buffer) // way to interact with binary data
@@ -56,11 +68,11 @@ function playMidi(buffer){
         }
     }
     tracksPos.pop()
-    
+
     console.log(tracksPos)
 
     // for(let i = 0; i < numTracks; i++){
-    for(let i = 0; i < 0; i++){
+    for(let i = 0; i < 1; i++){
         const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
         console.log("length: " + length)
         givenPosition += 4 // skips over the bytes describing the length
@@ -69,19 +81,32 @@ function playMidi(buffer){
         let eventType;
         while(j < 500){ // last three bytes are supposed to signal the end of the track
 
-            const getDelay = getVariableLength(j)
-            const delay = getDelay.delay // delay can be multiple bytes
+            const getDelay = getVariableLength(j, data)
+            delay = getDelay.delay // delay can be multiple bytes
+            if(delay < 1000){
+                requestAnimationFrame(PIANO.render)
+                // PIANO.render()
+            }
+
             j = getDelay.index
             console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
             const dataByte1 = data[j]
             j++
 
             if(dataByte1 === 0xff) {
-                // meta events (ignoring for now)
+                // meta events
+                if(data[j] === 0x51){
+                    // tempo event
+                    const byte1 = data[j + 2] << 16
+                    const byte2 = data[j + 3] << 8
+                    const byte3 = data[j + 4] 
+                    tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
+                    console.log(`TEMPO: ${tempo}`)
+                }
                 j++
                 const length = data[j] // length of meta event
                 j++
-                console.log("Meta Event with length "+ length)
+                console.log("Meta Event with length " + length)
                 j += length
                 continue;
             }
@@ -95,7 +120,7 @@ function playMidi(buffer){
             // running status means that we don't have to update event type if its the same
             console.log("event type " + eventType)
             console.log("channel "+ channel)
-            availableChannels = [0, 1, 2, 3, 4, 5, 6]
+            const availableChannels = [0, 1, 2, 3, 4, 5, 6]
             let validEvent = false
             availableChannels.forEach((el) => {
                 if(el == eventType){
@@ -108,39 +133,106 @@ function playMidi(buffer){
             } else {
                 j++
             }
+            // requestAnimationFrame(PIANO.render)
+            // PIANO.render()
         }
         givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
+        // requestAnimationFrame(PIANO.render2)
     }
-    // code snippet adapted from http://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html
-    function getVariableLength(startIndex){
-        let index = startIndex
-        let delay = data[index]
-        index++
-        if(delay & 0x80){
-            let byte;
-            delay &= 0x7f // only first 7 bits are data
-            do{
-                byte = data[index]
-                delay = ((delay << 7) + (byte & 0x7f)) // shifts the data and adds the next 7 bits
-                index++
-            } while (byte & 0x80) // last byte starts with bit 0
+}
+
+export function renderLoop(j){
+    const data = midiArray
+    let eventType;
+    const getDelay = getVariableLength(j, data)
+    delay = getDelay.delay // delay can be multiple bytes+
+
+    j = getDelay.index
+    console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
+    const dataByte1 = data[j]
+    j++
+
+    if(dataByte1 === 0xff) {
+        // meta events
+        if(data[j] === 0x51){
+            // tempo event
+            const byte1 = data[j + 2] << 16
+            const byte2 = data[j + 3] << 8
+            const byte3 = data[j + 4] 
+            tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
+            console.log(`TEMPO: ${tempo}`)
         }
-        return {delay: delay, index: index}
+        j++
+        const length = data[j] // length of meta event
+        j++
+        console.log("Meta Event with length " + length)
+        j += length
+    } else if(dataByte1 & 0x80){
+        // data byte
+        eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
+        channel = dataByte1 & 0xf // last 4 bits are channel
+    } else {
+        j--;
     }
+    // running status means that we don't have to update event type if its the same
+    console.log("event type " + eventType)
+    console.log("channel "+ channel)
+    const availableChannels = [0, 1, 2, 3, 4, 5, 6]
+    let validEvent = false
+    availableChannels.forEach((el) => {
+        if(el == eventType){
+            validEvent = true
+        }
+    })
+    if(validEvent){
+        channelEventTypes[eventType].function(j, data)
+        j += channelEventTypes[eventType].indexToAdd
+    } else {
+        j++
+    }
+    // requestAnimationFrame(PIANO.render)
+    // PIANO.render()
+    return j
+}
+
+// code snippet adapted from http://www.music.mcgill.ca/~ich/classes/mumt306/StandardMIDIfileformat.html
+function getVariableLength(startIndex, data){
+    let index = startIndex
+    let delay = data[index]
+    index++
+    if(delay & 0x80){
+        let byte;
+        delay &= 0x7f // only first 7 bits are data
+        do{
+            byte = data[index]
+            delay = ((delay << 7) + (byte & 0x7f)) // shifts the data and adds the next 7 bits
+            index++
+        } while (byte & 0x80) // last byte starts with bit 0
+    }
+    return {delay: delay, index: index}
 }
 
 function noteOff(j, data){
     // runs after a note off event
-    console.log(`Note OFF: ${getNote(data[j])} num: ${data[j]}`)
-    console.log(`Velocity: ${data[j + 1]}`)
-    console.log("j " + j.toString(16))
+    const note = data[j]
+    PIANO.notes.forEach((keyboardNote, i) => {
+        if(keyboardNote.note === note){
+            PIANO.notes[i].on = false
+            // PIANO.notes.splice(i, 1)
+        }
+    })
+    // console.log(`Note OFF: ${getNote(data[j])} num: ${data[j]}`)
+    // console.log(`Velocity: ${data[j + 1]}`)
+    // console.log("j " + j.toString(16))
 }
 
 function noteOn(j, data){
     // runs after a note on event
-    console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
-    console.log(`Velocity: ${data[j + 1]}`)
-    console.log("j " + j.toString(16))
+    const note = data[j]
+    PIANO.notes.push(new NOTE.note(note, 0))
+    // console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
+    // console.log(`Velocity: ${data[j + 1]}`)
+    // console.log("j " + j.toString(16))
 }
 
 function doNothing(){
