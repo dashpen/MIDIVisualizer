@@ -113,11 +113,11 @@ export function render(){
         } else{requestAnimationFrame(render2)}
         return
     }
-    notes.forEach((note) => {
-        // if(note.object.position.y < 0){
-        //     note.remove()
-        //     notes[note.note] = false
-        // }
+    notes.forEach((note, i) => {
+        if(note.object.position.y < 0){
+            note.remove()
+            notes.splice(i, 1)
+        }
         if(note.on){
             note.moveDown()
         } else {
@@ -144,26 +144,17 @@ export function render(){
 
 export function render2(){
 
-    let curNote
-
-    for(let i = 0; i < 127; i++){
-
-        curNote = notes[i]
-
-        if(!(curNote)) continue
-
-        // if(note.object.position.y < 0){
-        //     note.remove()
-        //     notes[note.note] = false
-        //     continue
-        // }
-
-        if(curNote.on){
-            curNote.moveDown()
-        } else {
-            curNote.turnOff()
+    notes.forEach((note, i) => {
+        if(note.object.position.y < 0){
+            note.remove()
+            notes.splice(i, 1)
         }
-    }
+        if(note.on){
+            note.moveDown()
+        } else {
+            note.turnOff()
+        }
+    })
 
     renderer.render(scene, camera)
     requestAnimationFrame(render2)
