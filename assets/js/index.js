@@ -36,6 +36,11 @@ export function getTimeDelay() {
     return beats * 270
 }
 
+export function getTickDelay() {
+    const beats = delay/480
+    return beats * 270
+}
+
 document.getElementById("buttone2").addEventListener('click', playMid)
 document.getElementById("buttone3").addEventListener('click', getTimeDelay)
 
@@ -142,28 +147,28 @@ function playMidi(buffer){
 }
 
 export function renderLoop(j){
-    const data = midiArray
     let eventType;
-    const getDelay = getVariableLength(j, data)
-    delay = getDelay.delay // delay can be multiple bytes+
+    const getDelay = getVariableLength(j, midiArray)
+    // prevDelay = delay
+    delay = getDelay.delay // delay can be multiple bytes
 
     j = getDelay.index
     console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
-    const dataByte1 = data[j]
+    const dataByte1 = midiArray[j]
     j++
 
     if(dataByte1 === 0xff) {
         // meta events
-        if(data[j] === 0x51){
+        if(midiArray[j] === 0x51){
             // tempo event
-            const byte1 = data[j + 2] << 16
-            const byte2 = data[j + 3] << 8
-            const byte3 = data[j + 4] 
+            const byte1 = midiArray[j + 2] << 16
+            const byte2 = midiArray[j + 3] << 8
+            const byte3 = midiArray[j + 4] 
             tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
             console.log(`TEMPO: ${tempo}`)
         }
         j++
-        const length = data[j] // length of meta event
+        const length = midiArray[j] // length of meta event
         j++
         console.log("Meta Event with length " + length)
         j += length
@@ -185,11 +190,65 @@ export function renderLoop(j){
         }
     })
     if(validEvent){
-        channelEventTypes[eventType].function(j, data)
+        channelEventTypes[eventType].function(j, midiArray)
         j += channelEventTypes[eventType].indexToAdd
     } else {
         j++
     }
+    // requestAnimationFrame(PIANO.render)
+    // PIANO.render()
+    return j
+}
+
+export function renderLoop2(j){
+    let eventType;
+    const dataByte1 = midiArray[j]
+    j++
+
+    if(dataByte1 === 0xff) {
+        // meta events
+        if(midiArray[j] === 0x51){
+            // tempo event
+            const byte1 = midiArray[j + 2] << 16
+            const byte2 = midiArray[j + 3] << 8
+            const byte3 = midiArray[j + 4] 
+            tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
+            console.log(`TEMPO: ${tempo}`)
+        }
+        j++
+        const length = midiArray[j] // length of meta event
+        j++
+        console.log("Meta Event with length " + length)
+        j += length
+    } else if(dataByte1 & 0x80){
+        // data byte
+        eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
+        channel = dataByte1 & 0xf // last 4 bits are channel
+    } else {
+        j--;
+    }
+    // running status means that we don't have to update event type if its the same
+    console.log("event type " + eventType)
+    console.log("channel "+ channel)
+    const availableChannels = [0, 1, 2, 3, 4, 5, 6]
+    let validEvent = false
+    availableChannels.forEach((el) => {
+        if(el == eventType){
+            validEvent = true
+        }
+    })
+    if(validEvent){
+        channelEventTypes[eventType].function(j, midiArray)
+        j += channelEventTypes[eventType].indexToAdd
+    } else {
+        j++
+    }
+
+    const getDelay = getVariableLength(j, midiArray)
+    delay = getDelay.delay // delay can be multiple bytes
+
+    j = getDelay.index
+    console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
     // requestAnimationFrame(PIANO.render)
     // PIANO.render()
     return j
@@ -267,151 +326,4 @@ const notes = { // midi index for each note (ignores octaves)
 function getNote(number){
     const noteObj = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
     return `${noteObj.note}${noteObj.octave}`
-}
-
-function playMidiLaterFunction(e){
-    const buffer = e.target.result
-    const view = new DataView(buffer)
-    // getting header values
-    const headerText = view.getUint32(0, false)
-    if(headerText !== 1297377380){ // checks if the first 4 bytes are a u32int representation of MThd
-        alert("Invalid MIDI file")
-        return
-    }
-    const format = view.getUint16(8, false) // format is either 0, 1, or 2
-    const numTracks = view.getUint16(10, false) // number of MTrks in the file
-    const rawDivisions = view.getUint16(12, false)
-    let timeFormat = 0;
-    let ticksPerQuarterNote = 0;
-    if(rawDivisions < 32768){ // means its a 'ticks per quarter-note' format
-        ticksPerQuarterNote = rawDivisions;
-        timeFormat = 0;
-    } else {
-        // work in progress for the other format
-    }
-    /*
-    COME
-    BACK
-    TO 
-    THIS 
-    LATER
-    PLEASE
-    DON'T
-    FORGET
-    !!!
-    */
-
-    let givenPosition = 18;
-
-    // var midiEvents = new Array(numTracks)
-    var midiEvents = []
-
-    const metaEventObject = {
-        0: () => {console.log("HI!")}
-    }
-
-    console.log(numTracks)
-    // main loop for midi tracks
-    for(let i = 0; i < numTracks; i++){
-        const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
-        console.log("length: " + length)
-        givenPosition += 4 // skips over the bytes describing the length
-        let midiTrack = [] // stores midi events for the current track
-        let j = givenPosition
-        while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
-            // console.log("position:" + (curPos))
-            const delay = view.getUint8(j, false) // first 2 bytes of an event are supposed to be a delay
-            const dataByte1 = view.getUint8(j + 2, false)
-            // console.log(`J :${j} delay:${delay}`)
-            // console.log("dataByte1: " + dataByte1)
-            if(dataByte1 === 255) { // check for meta-events
-                const dataByte2 = view.getUint8(j + 4, false)
-                let metaEventObj = {
-                    delay: delay,
-                    type: "",
-                    text: ""
-                }
-                if(dataByte2 < 8){
-                    const textLength = view.getUint8(j + 6, false)
-                    const text = new Int8Array(buffer, j + 8, textLength) // gets text as an array of ints to be processed later
-                    metaEventObj.text = text
-                    j += 8 + textLength
-                }
-                switch (dataByte2) {
-                    case 0:
-                        // sequence number
-                        j++
-                        break;
-                    case 1:
-                        metaEventObj.type = "text"
-                        break;
-                    case 2: // basically the same as a text event
-                        metaEventObj.type = "copyright"
-                        break;
-                    case 3:
-                        let trackTitleObjType = ""
-                        if(format === 0 || (i === 0 && format === 1)){
-                            trackTitleObjType = "Squence Name"
-                        } else {
-                            trackTitleObjType = "Track Name"
-                        }
-                        metaEventObj.type = trackTitleObjType
-                        break;
-                    case 4:
-                        metaEventObj.type = "instrument name"
-                        break;
-                    case 5:
-                        metaEventObj.type = "lyric"
-                        break;
-                    case 6:
-                        metaEventObj.type = "marker"
-                        break;
-                    case 7: 
-                        metaEventObj.type = "cue"
-                        break;
-                    case 8:
-                        const channelPrefixChannel = view.getUint8(j + 6, false)
-                        metaEventObj.text = channelPrefixChannel
-                        metaEventObj.type = "channel prefix"
-                        j += 6;
-                        break;
-                    case 81:
-                        const tempTempo = view.getUint32(j + 4, false) - 50331648
-                        metaEventObj.type = "tempo"
-                        metaEventObj.text = tempTempo
-                    case 47:
-                        // end of track
-                        console.log("END OF TRACK")
-                        j = length + givenPosition;
-                        break;
-                    default:
-                        j++
-                        break;
-                }
-                midiTrack.push(midiEventObj) // adds midi event to the array
-            }
-            // console.log(firstBytes)
-            j++
-        }
-        midiEvents.push(midiTrack)
-        console.log(midiEvents)
-        console.log("length: " + length)
-        console.log("GivenPosition: " + givenPosition)
-
-        givenPosition += length + 4
-    }
-
-
-
-
-    // console.log(format, numTracks)
-    // const headerOffset = view.getUint32(4, false)
-    // console.log(view.getUint32(headerOffset + 4 + 4, false))
-    // const firstOffset = view.getUint32(headerOffset + 12, false)
-    // console.log(firstOffset)
-    // const secondOffset = view.getUint32(headerOffset + 20 + firstOffset, false)
-    // console.log(secondOffset)
-    // const thirdOffset = view.getUint32(headerOffset + 28 + firstOffset + secondOffset, false)
-    // console.log(thirdOffset)
-    // document.getElementById("textField").innerHTML = hexString
 }

@@ -32,8 +32,8 @@ camera.position.z = 20
 camera.position.y = (cameraHeight - 5)/2
 scene.add(camera)
 const keyboard = new THREE.Object3D()
-const light = new THREE.AmbientLight(0xFFFFFF, 1)
-scene.add(light)
+// const light = new THREE.AmbientLight(0xFFFFFF, 1)
+// scene.add(light)
 const noteGeometry = new THREE.BoxGeometry(1.8, 4.8, 1.1)
 const noteBorderGeometry = new THREE.BoxGeometry(2, 5, 1)
 export const noteMaterial = new THREE.MeshBasicMaterial({color: 0xFFFFFF})
@@ -55,20 +55,20 @@ scene.add(keyboard)
 // camera.lookAt(keyboard.getWorldPosition(vec))
 renderer.render(scene, camera)
 
-document.addEventListener("keydown", (event) => {
-    updateCamera()
-    if(event.keyCode == 37){
-        camera.position.x += -0.1
-    } else if(event.keyCode == 39){
-        camera.position.x += 0.1
-    } else if(event.keyCode == 38){
-        camera.position.y += -0.1
-    } else if(event.keyCode == 40){
-        camera.position.y += 0.1
-    }
+// document.addEventListener("keydown", (event) => {
+//     updateCamera()
+//     if(event.keyCode == 37){
+//         camera.position.x += -0.1
+//     } else if(event.keyCode == 39){
+//         camera.position.x += 0.1
+//     } else if(event.keyCode == 38){
+//         camera.position.y += -0.1
+//     } else if(event.keyCode == 40){
+//         camera.position.y += 0.1
+//     }
 
-    renderer.render(scene, camera)
-})
+//     renderer.render(scene, camera)
+// })
 
 document.getElementById("width").addEventListener("input", ()=> {
     cameraWidth = document.getElementById("width").value
@@ -96,16 +96,24 @@ document.getElementById("canvas2").onclick = () => {requestAnimationFrame(render
 
 let start = -1
 let del = 0
+let rawDelay = 0
+// export let j = 7999
+// export let j = 8432
 export let j = 416
 
-export function render(){
+export function render(time){
 
 
     if (start === -1) {
         start = Date.now()
-        del = LOGIC.getTimeDelay()
+        // start = time
+        rawDelay = LOGIC.getTimeDelay()
+        del = rawDelay > 0 ? rawDelay/480 : del
     }
-    if(del === 0){
+
+    // const elapsed = time - start
+
+    if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
         if(j < 10000){
@@ -119,16 +127,20 @@ export function render(){
             notes.splice(i, 1)
         }
         if(note.on){
-            note.moveDown()
-        } else {
-            note.turnOff()
+            note.extendByDelay(del)
         }
+        note.moveDown()
+        
     })
 
     renderer.render(scene, camera)
 
+    // for(let i = 0; i < del; i++){
+    //     requestAnimationFrame(delayRender)
+    // }
+
     const elapsed = Date.now() - start
-    if(elapsed > del){
+    if(elapsed > rawDelay){
         j = LOGIC.renderLoop(j)
         console.log("EL:APSETD " + elapsed)
         start = -1
@@ -142,6 +154,17 @@ export function render(){
 }
 // requestAnimationFrame(render)
 
+function delayRender(){
+    notes.forEach((note, i) => {
+        if(note.object.position.y < 0){
+            note.remove()
+            notes.splice(i, 1)
+        }
+        note.moveDown()
+    })
+    renderer.render(scene, camera)
+}
+
 export function render2(){
 
     notes.forEach((note, i) => {
@@ -149,11 +172,7 @@ export function render2(){
             note.remove()
             notes.splice(i, 1)
         }
-        if(note.on){
-            note.moveDown()
-        } else {
-            note.turnOff()
-        }
+        note.moveDown()
     })
 
     renderer.render(scene, camera)
