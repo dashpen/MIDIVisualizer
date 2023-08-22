@@ -50,6 +50,8 @@ function playMid(){
     PIANO.render()
 }
 
+
+// testing function for reading binary data
 function playMidi(buffer){
     const view = new DataView(buffer) // way to interact with binary data
     const data = new Uint8Array(buffer) // typed array with an array of bytes
@@ -149,11 +151,9 @@ function playMidi(buffer){
 export function renderLoop(j){
     let eventType;
     const getDelay = getVariableLength(j, midiArray)
-    // prevDelay = delay
     delay = getDelay.delay // delay can be multiple bytes
 
     j = getDelay.index
-    console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
     const dataByte1 = midiArray[j]
     j++
 
@@ -177,11 +177,9 @@ export function renderLoop(j){
         eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
         channel = dataByte1 & 0xf // last 4 bits are channel
     } else {
-        j--;
+        j--; // subtracts in case of running status so that the counter lines up
     }
     // running status means that we don't have to update event type if its the same
-    console.log("event type " + eventType)
-    console.log("channel "+ channel)
     const availableChannels = [0, 1, 2, 3, 4, 5, 6]
     let validEvent = false
     availableChannels.forEach((el) => {
@@ -195,8 +193,6 @@ export function renderLoop(j){
     } else {
         j++
     }
-    // requestAnimationFrame(PIANO.render)
-    // PIANO.render()
     return j
 }
 
@@ -288,7 +284,9 @@ function noteOff(j, data){
 function noteOn(j, data){
     // runs after a note on event
     const note = data[j]
-    PIANO.notes.push(new NOTE.note(note, 0))
+    const noteToTurnOn = new NOTE.note(note, 0)
+    noteToTurnOn.on = true
+    PIANO.notes.push(noteToTurnOn)
     // console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
     // console.log(`Velocity: ${data[j + 1]}`)
     // console.log("j " + j.toString(16))
@@ -298,6 +296,8 @@ function doNothing(){
     // does nothing
 }
 
+// indexToAdd is the size of the event to skip in the runner
+// function is what happens during the event
 const channelEventTypes = {
     0: {indexToAdd: 2, function: noteOff},
     1: {indexToAdd: 2, function: noteOn},
@@ -308,22 +308,22 @@ const channelEventTypes = {
     6: {indexToAdd: 2, function: doNothing}, // Pitch Wheel Change.
 }
 
-const notes = { // midi index for each note (ignores octaves)
-    0: "C",
-    1: "C#",
-    2: "D",
-    3: "D#",
-    4: "E",
-    5: "F",
-    6: "F#",
-    7: "G",
-    8: "G#",
-    9: "A",
-    10: "A#",
-    11: "B",
-}
+// const notes = { // midi index for each note (ignores octaves)
+//     0: "C",
+//     1: "C#",
+//     2: "D",
+//     3: "D#",
+//     4: "E",
+//     5: "F",
+//     6: "F#",
+//     7: "G",
+//     8: "G#",
+//     9: "A",
+//     10: "A#",
+//     11: "B",
+// }
 
-function getNote(number){
-    const noteObj = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
-    return `${noteObj.note}${noteObj.octave}`
-}
+// function getNote(number){
+//     const noteObj = {octave: Math.floor(number / 12) - 1, note: notes[number % 12]}
+//     return `${noteObj.note}${noteObj.octave}`
+// }

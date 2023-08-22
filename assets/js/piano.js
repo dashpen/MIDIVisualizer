@@ -99,7 +99,7 @@ let del = 0
 let rawDelay = 0
 // export let j = 7999
 // export let j = 8432
-export let j = 416
+export let j = 415
 
 export function render(time){
 
@@ -113,6 +113,8 @@ export function render(time){
 
     // const elapsed = time - start
 
+
+    // does not make notes fall if there is no delay
     if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
@@ -121,50 +123,40 @@ export function render(time){
         } else{requestAnimationFrame(render2)}
         return
     }
+
+    // moves notes based on state
     notes.forEach((note, i) => {
-        if(note.object.position.y < 0){
+        // removes note if not visible
+        if((note.object.position.y + note.length) < 0){
             note.remove()
             notes.splice(i, 1)
         }
         if(note.on){
-            note.extendByDelay(del)
+            // adds stored delay to the length of the note
+            note.extendByDelay(rawDelay * 16 / 9)
+            console.log("DEL " + rawDelay * 16 / 9)
         }
         note.moveDown()
-        
     })
 
     renderer.render(scene, camera)
-
-    // for(let i = 0; i < del; i++){
-    //     requestAnimationFrame(delayRender)
-    // }
 
     const elapsed = Date.now() - start
+
+    // code to keep constant framerate
     if(elapsed > rawDelay){
-        j = LOGIC.renderLoop(j)
-        console.log("EL:APSETD " + elapsed)
-        start = -1
+        j = LOGIC.renderLoop(j) // runs through the binary loop once
+        // console.log("EL:APSETD " + elapsed)
+        start = -1 // resets start for next loop
         if(j < 10000){
             requestAnimationFrame(render)
-        } else{requestAnimationFrame(render2)}
+        } else{requestAnimationFrame(render2)} // makes notes fall infinitely
     } else {
-        requestAnimationFrame(render)
-        // render()
+        requestAnimationFrame(render) // if hasn't run enough, runs again
     }
 }
-// requestAnimationFrame(render)
 
-function delayRender(){
-    notes.forEach((note, i) => {
-        if(note.object.position.y < 0){
-            note.remove()
-            notes.splice(i, 1)
-        }
-        note.moveDown()
-    })
-    renderer.render(scene, camera)
-}
-
+// makes notes fall infinitely
 export function render2(){
 
     notes.forEach((note, i) => {
