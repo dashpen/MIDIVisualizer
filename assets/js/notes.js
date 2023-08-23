@@ -2,12 +2,12 @@ import * as THREE from 'three';
 import {noteMaterial} from '../js/piano.js'
 import {scene} from '../js/piano.js'
 import {cameraHeight as height} from '../js/piano.js'
+import {notes as storedNotes} from '../js/piano.js'
 
 const box = new THREE.PlaneGeometry(1, 1)
 
 
 const scaleMat = new THREE.Matrix4()
-
 
 export class note {
     note;
@@ -17,13 +17,18 @@ export class note {
     length;
 
     constructor(note, track){
+        const prevNote = storedNotes[storedNotes.length - 1]
         this.note = note
         this.track = track
         this.on = true
         this.object = new THREE.Mesh(box, noteMaterial)
         this.object.position.x = (this.note - 60) * 2 + 1
-        this.object.position.y = height
-        this.length = 1
+        if(prevNote){
+            this.object.position.y = prevNote.object.position.y + prevNote.length
+        } else {
+            this.object.position.y = height
+        }
+        this.length = 0
         scene.add(this.object)
     }
 
@@ -41,10 +46,10 @@ export class note {
     * @param {number} delay delay to extend the note by
     */
     extendByDelay(delay){
-        const length = delay
+        const length = delay * 10
 
         this.object.scale.y += length
-        // this.object.position.y += delay
+        this.object.position.y += length
         // scaleMat.set(
         //     1, 0, 0, 0,
         //     0, length, 0, 0,

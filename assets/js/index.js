@@ -284,9 +284,7 @@ function noteOff(j, data){
 function noteOn(j, data){
     // runs after a note on event
     const note = data[j]
-    const noteToTurnOn = new NOTE.note(note, 0)
-    noteToTurnOn.on = true
-    PIANO.notes.push(noteToTurnOn)
+    PIANO.notes.push(new NOTE.note(note, 0))
     // console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
     // console.log(`Velocity: ${data[j + 1]}`)
     // console.log("j " + j.toString(16))
