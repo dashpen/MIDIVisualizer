@@ -113,6 +113,13 @@ export function render(time){
 
     // const elapsed = time - start
 
+    notes.forEach((note) => {
+        if(note.on){
+            // adds stored delay to the length of the note
+            note.extendByDelay(del)
+            console.log("DEL " + del)
+        }
+    })
 
     // does not make notes fall if there is no delay
     if(rawDelay === 0){
@@ -130,11 +137,6 @@ export function render(time){
         if((note.object.position.y + note.length) < 0){
             note.remove()
             notes.splice(i, 1)
-        }
-        if(note.on){
-            // adds stored delay to the length of the note
-            note.extendByDelay(rawDelay * 16 / 9)
-            console.log("DEL " + rawDelay * 16 / 9)
         }
         note.moveDown()
     })
