@@ -145,6 +145,20 @@ export function render(time){
 
     const elapsed = Date.now() - start
 
+
+    // // code to keep constant framerate
+    // if(elapsed > 33.33){
+    //     j = LOGIC.renderLoop(j) // runs through the binary loop once
+    //     console.log("EL:APSETD " + elapsed)
+    //     start = -1 // resets start for next loop
+    //     if(j < 10000){
+    //         setTimeout(requestAnimationFrame, elapsed - 33.33, render)
+    //         // requestAnimationFrame(render)
+    //     } else{requestAnimationFrame(render2)} // makes notes fall infinitely
+    // } else {
+    //     requestAnimationFrame(render) // if hasn't run enough, runs again
+    // }
+
     // code to keep constant framerate
     if(elapsed > rawDelay){
         j = LOGIC.renderLoop(j) // runs through the binary loop once

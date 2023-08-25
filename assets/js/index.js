@@ -29,16 +29,16 @@ document.getElementById("midiUpload").onsubmit = async function(event){
 
 let channel = 0;
 export let delay = 0;
-let tempo = 500000;
+let tempo = 270000;
 
 export function getTimeDelay() {
     const beats = delay/480
-    return beats * 270
+    return beats * tempo/1000
 }
 
 export function getTickDelay() {
     const beats = delay/480
-    return beats * 270
+    return beats * tempo/1000
 }
 
 document.getElementById("buttone2").addEventListener('click', playMid)
@@ -62,12 +62,13 @@ function playMidi(buffer){
     }
     const format = view.getUint16(8, false) // format is either 0, 1, or 2
     const numTracks = view.getUint16(10, false) // number of MTrks in the file
-    const rawDivisions = view.getUint16(12, false)
+    const rawDivisions = view.getUint16(12, false) // used for tempo
     let givenPosition = 18; // skips the header chunk
 
     let tracksPos = [22]
 
     {
+        // gets the position of where the different tracks start to play them simultaneously
         let i = 18
         while(i < buffer.byteLength){
             i += view.getUint32(i, false) + 8
@@ -284,7 +285,7 @@ function noteOff(j, data){
 function noteOn(j, data){
     // runs after a note on event
     const note = data[j]
-    PIANO.notes.push(new NOTE.note(note, 0))
+    PIANO.notes.push(new NOTE.note(note, 0, j))
     // console.log(`Note ON: ${getNote(data[j])} num: ${data[j]}`)
     // console.log(`Velocity: ${data[j + 1]}`)
     // console.log("j " + j.toString(16))

@@ -15,18 +15,20 @@ export class note {
     object;
     on;
     length;
+    j;
 
-    constructor(note, track){
+    constructor(note, track, j){
         const prevNote = storedNotes[storedNotes.length - 1]
         this.note = note
         this.track = track
+        this.j = j
         this.on = true
         this.object = new THREE.Mesh(box, noteMaterial)
         this.object.position.x = (this.note - 60) * 2 + 1
         if(prevNote){
             this.object.position.y = prevNote.object.position.y + prevNote.length
         } else {
-            this.object.position.y = height
+            this.object.position.y = height - 40
         }
         this.length = 0
         scene.add(this.object)
