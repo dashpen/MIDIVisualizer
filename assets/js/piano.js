@@ -112,7 +112,7 @@ export function render(time){
         // start = time
         rawDelay = LOGIC.getTimeDelay()
         rawDelayAfter = LOGIC.getTimeDelayAfter()
-        del = rawDelay > 0 ? rawDelay : del
+        // del = rawDelay > 0 ? rawDelay : del
     }
 
     // const elapsed = time - start
@@ -144,7 +144,6 @@ export function render(time){
         if((note.object.position.y) < 0){
             note.remove()
             notes.splice(i, 1)
-            console.log("Removed " + note.note)
         }
         note.moveDown(20/frameRate)
     }
@@ -159,7 +158,7 @@ export function render(time){
     // const elapsed = time - start
     // console.log("EL:APSETD " + elapsed)
     start = -1 // resets start for next loop
-    if(j < 10000){
+    if(j < 1000){
         if(elapsed > 1000/frameRate){
             requestAnimationFrame(render)
         } else {
@@ -184,6 +183,10 @@ export function render(time){
 // makes notes fall infinitely
 export function render2(){
 
+    if (start === -1) {
+        start = Date.now()
+    }
+
     notes.forEach((note, i) => {
         if(note.object.position.y < 0){
             note.remove()
@@ -193,5 +196,12 @@ export function render2(){
     })
 
     renderer.render(scene, camera)
-    requestAnimationFrame(render2)
+
+    const elapsed = Date.now() - start
+    start = -1 // resets start for next loop
+    if(elapsed > 1000/frameRate){
+        requestAnimationFrame(render2)
+    } else {
+        setTimeout(requestAnimationFrame, 1000/frameRate - elapsed, render2)
+    }
 }

@@ -203,7 +203,6 @@ export function renderLoop(j){
         j++
     }
     delay2 = getVariableLength(j, midiArray).delay
-    console.log(delay2)
     return j
 }
 
