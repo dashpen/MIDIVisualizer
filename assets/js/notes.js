@@ -26,16 +26,17 @@ export class note {
         this.object = new THREE.Mesh(box, noteMaterial)
         this.object.position.x = (this.note - 60) * 2 + 1
         if(prevNote){
-            this.object.position.y = prevNote.object.position.y + prevNote.length
+            this.object.position.y = prevNote.object.position.y
         } else {
-            this.object.position.y = height - 40
+            this.object.position.y = height
         }
         this.length = 0
         scene.add(this.object)
     }
 
-    moveDown(){
-        this.object.position.y -= 0.2
+    moveDown(amount){
+        // console.log(`AMOUNT: ${amount}`)
+        this.object.position.y -= amount
     }
 
     // extendOne(){
@@ -48,9 +49,12 @@ export class note {
     * @param {number} delay delay to extend the note by
     */
     extendByDelay(delay){
-        const length = delay * 10
-
-        this.object.scale.y += length
+        const length = delay / 50
+        this.length += length
+        const geometry = new THREE.PlaneGeometry(1, this.length)
+        this.object.geometry = geometry
+        // this.object.scale.y *= length
+        // this.object.translateY(length)
         this.object.position.y += length
         // scaleMat.set(
         //     1, 0, 0, 0,
@@ -58,8 +62,7 @@ export class note {
         //     0, 0, 1, 0,
         //     0, 0, 0, 1)
         // this.object.applyMatrix4(scaleMat)
-        this.length += length
-        console.log("DELAY " + delay)
+        // console.log("DELAY " + length)
     }
     
     remove(){

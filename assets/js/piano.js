@@ -87,7 +87,7 @@ document.getElementById("height").addEventListener("input", ()=> {
 let i = 0
 
 export let notes = []
-document.getElementById("canvas").onclick = () => {console.log(notes)}
+document.getElementById("canvas").onclick = () => {console.log(notes); console.log("start"); console.log(j); setTimeout(()=> {console.log("end")}, 1000)}
 document.getElementById("canvas2").onclick = () => {requestAnimationFrame(render2)}
 
 // for(let i = 0; i < 127; i++){
@@ -97,9 +97,12 @@ document.getElementById("canvas2").onclick = () => {requestAnimationFrame(render
 let start = -1
 let del = 0
 let rawDelay = 0
+let rawDelayAfter = 0
+const frameRate = 40
 // export let j = 7999
 // export let j = 8432
 export let j = 415
+// export let j = 2400
 
 export function render(time){
 
@@ -108,68 +111,74 @@ export function render(time){
         start = Date.now()
         // start = time
         rawDelay = LOGIC.getTimeDelay()
-        del = rawDelay > 0 ? rawDelay/480 : del
+        rawDelayAfter = LOGIC.getTimeDelayAfter()
+        del = rawDelay > 0 ? rawDelay : del
     }
 
     // const elapsed = time - start
 
-    notes.forEach((note) => {
+    for(let i = 0; i < notes.length; i++){
+        // removes note if not visible
+        const note = notes[i]
         if(note.on){
             // adds stored delay to the length of the note
-            note.extendByDelay(del)
-            console.log("DEL " + del)
+            note.extendByDelay(rawDelayAfter)
+            // console.log("DEL " + del)
         }
-    })
+    }
 
     // does not make notes fall if there is no delay
     if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
-        if(j < 10000){
+        if(j < 100000){
             requestAnimationFrame(render)
         } else{requestAnimationFrame(render2)}
         return
     }
 
     // moves notes based on state
-    notes.forEach((note, i) => {
+    for(let i = 0; i < notes.length; i++){
         // removes note if not visible
-        if((note.object.position.y + note.length) < 0){
+        const note = notes[i]
+        if((note.object.position.y) < 0){
             note.remove()
             notes.splice(i, 1)
+            console.log("Removed " + note.note)
         }
-        note.moveDown()
-    })
+        note.moveDown(20/frameRate)
+    }
 
     renderer.render(scene, camera)
 
-    const elapsed = Date.now() - start
 
+
+    // code to keep constant framerate
+    j = LOGIC.renderLoop(j) // runs through the binary loop once
+    const elapsed = Date.now() - start
+    // const elapsed = time - start
+    // console.log("EL:APSETD " + elapsed)
+    start = -1 // resets start for next loop
+    if(j < 10000){
+        if(elapsed > 1000/frameRate){
+            requestAnimationFrame(render)
+        } else {
+            setTimeout(requestAnimationFrame, 1000/frameRate - elapsed, render)
+        }
+    } else{requestAnimationFrame(render2)} // makes notes fall infinitely
+    // requestAnimationFrame(render) // if hasn't run enough, runs again
 
     // // code to keep constant framerate
-    // if(elapsed > 33.33){
+    // if(elapsed > rawDelay){
     //     j = LOGIC.renderLoop(j) // runs through the binary loop once
-    //     console.log("EL:APSETD " + elapsed)
+    //     // console.log("EL:APSETD " + elapsed)
     //     start = -1 // resets start for next loop
     //     if(j < 10000){
-    //         setTimeout(requestAnimationFrame, elapsed - 33.33, render)
-    //         // requestAnimationFrame(render)
+    //         requestAnimationFrame(render)
     //     } else{requestAnimationFrame(render2)} // makes notes fall infinitely
     // } else {
     //     requestAnimationFrame(render) // if hasn't run enough, runs again
     // }
-
-    // code to keep constant framerate
-    if(elapsed > rawDelay){
-        j = LOGIC.renderLoop(j) // runs through the binary loop once
-        // console.log("EL:APSETD " + elapsed)
-        start = -1 // resets start for next loop
-        if(j < 10000){
-            requestAnimationFrame(render)
-        } else{requestAnimationFrame(render2)} // makes notes fall infinitely
-    } else {
-        requestAnimationFrame(render) // if hasn't run enough, runs again
-    }
 }
 
 // makes notes fall infinitely
@@ -180,7 +189,7 @@ export function render2(){
             note.remove()
             notes.splice(i, 1)
         }
-        note.moveDown()
+        note.moveDown(20/frameRate)
     })
 
     renderer.render(scene, camera)

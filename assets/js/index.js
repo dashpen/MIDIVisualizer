@@ -29,17 +29,25 @@ document.getElementById("midiUpload").onsubmit = async function(event){
 
 let channel = 0;
 export let delay = 0;
-let tempo = 270000;
+export let delay2 = 0;
+export let tempo = 270000;
+export let temp = () => {return tempo/1000}
+export let divs = 480
 
 export function getTimeDelay() {
     const beats = delay/480
     return beats * tempo/1000
 }
 
-export function getTickDelay() {
-    const beats = delay/480
+export function getTimeDelayAfter() {
+    const beats = delay2/480
     return beats * tempo/1000
 }
+
+// export function getTickDelay() {
+//     const beats = delay/480
+//     return beats * tempo/1000
+// }
 
 document.getElementById("buttone2").addEventListener('click', playMid)
 document.getElementById("buttone3").addEventListener('click', getTimeDelay)
@@ -194,6 +202,8 @@ export function renderLoop(j){
     } else {
         j++
     }
+    delay2 = getVariableLength(j, midiArray).delay
+    console.log(delay2)
     return j
 }
 
