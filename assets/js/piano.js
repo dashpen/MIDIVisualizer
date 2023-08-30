@@ -109,10 +109,8 @@ export function render(time){
 
     if (start === -1) {
         start = Date.now()
-        // start = time
         rawDelay = LOGIC.getTimeDelay()
         rawDelayAfter = LOGIC.getTimeDelayAfter()
-        // del = rawDelay > 0 ? rawDelay : del
     }
 
     // const elapsed = time - start
@@ -123,7 +121,6 @@ export function render(time){
         if(note.on){
             // adds stored delay to the length of the note
             note.extendByDelay(rawDelayAfter)
-            // console.log("DEL " + del)
         }
     }
 
@@ -131,7 +128,7 @@ export function render(time){
     if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
-        if(j < 100000){
+        if(j < 10000){
             requestAnimationFrame(render)
         } else{requestAnimationFrame(render2)}
         return
@@ -155,37 +152,20 @@ export function render(time){
     // code to keep constant framerate
     j = LOGIC.renderLoop(j) // runs through the binary loop once
     const elapsed = Date.now() - start
-    // const elapsed = time - start
-    // console.log("EL:APSETD " + elapsed)
     start = -1 // resets start for next loop
-    if(j < 1000){
+    if(j < 10000){
         if(elapsed > 1000/frameRate){
             requestAnimationFrame(render)
         } else {
             setTimeout(requestAnimationFrame, 1000/frameRate - elapsed, render)
         }
     } else{requestAnimationFrame(render2)} // makes notes fall infinitely
-    // requestAnimationFrame(render) // if hasn't run enough, runs again
-
-    // // code to keep constant framerate
-    // if(elapsed > rawDelay){
-    //     j = LOGIC.renderLoop(j) // runs through the binary loop once
-    //     // console.log("EL:APSETD " + elapsed)
-    //     start = -1 // resets start for next loop
-    //     if(j < 10000){
-    //         requestAnimationFrame(render)
-    //     } else{requestAnimationFrame(render2)} // makes notes fall infinitely
-    // } else {
-    //     requestAnimationFrame(render) // if hasn't run enough, runs again
-    // }
 }
 
 // makes notes fall infinitely
 export function render2(){
 
-    if (start === -1) {
-        start = Date.now()
-    }
+    start = Date.now()
 
     notes.forEach((note, i) => {
         if(note.object.position.y < 0){
@@ -198,7 +178,6 @@ export function render2(){
     renderer.render(scene, camera)
 
     const elapsed = Date.now() - start
-    start = -1 // resets start for next loop
     if(elapsed > 1000/frameRate){
         requestAnimationFrame(render2)
     } else {
