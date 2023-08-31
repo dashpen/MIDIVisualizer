@@ -98,11 +98,48 @@ let start = -1
 let del = 0
 let rawDelay = 0
 let rawDelayAfter = 0
-const frameRate = 40
+const frameRate = 60
 // export let j = 7999
 // export let j = 8432
 export let j = 415
 // export let j = 2400
+
+
+export function setUp(){
+    if(del == 0){
+        console.log("start " + Date.now())
+        del = 1
+    }
+    //hope this works :)
+
+    rawDelay = LOGIC.getTimeDelay()
+    rawDelayAfter = LOGIC.getTimeDelayAfter()
+
+    const max = notes.length > 50 ? notes.length - 50 : 0
+
+
+    for(let i = notes.length - 1; i >= max; i--){
+        const note = notes[i]
+        if(note.on){
+            // adds stored delay to the length of the note
+            note.extendByDelay(rawDelayAfter)
+        }
+    }
+
+    if(rawDelay === 0){
+        j = LOGIC.renderLoop(j)
+        start = -1
+        if(j < 5000){
+            setUp()
+        } else{requestAnimationFrame(render2); console.log("end "  + Date.now())}
+        return
+    }
+
+    j = LOGIC.renderLoop(j) // runs through the binary loop once
+    if(j < 5000){
+            setUp()
+    } else{requestAnimationFrame(render2); console.log("end "  + Date.now())} // makes notes fall infinitely
+}
 
 export function render(time){
 
@@ -115,7 +152,11 @@ export function render(time){
 
     // const elapsed = time - start
 
-    for(let i = 0; i < notes.length; i++){
+    const max = notes.length > 50 ? notes.length - 50 : 0
+
+    // const notesLen = notes.length
+
+    for(let i = notes.length - 1; i >= max; i--){
         // removes note if not visible
         const note = notes[i]
         if(note.on){
