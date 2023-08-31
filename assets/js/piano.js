@@ -98,16 +98,29 @@ let start = -1
 let del = 0
 let rawDelay = 0
 let rawDelayAfter = 0
+let firstRun = -1
 const frameRate = 60
 // export let j = 7999
 // export let j = 8432
 export let j = 415
+let endJ = 0
+let startTime = 0
 // export let j = 2400
+
+export function startSetUp(){
+    endJ = j + 1000
+    setUp2()
+}
+export function startSetUp2(){
+    endJ = j + 400
+    setUp()
+}
 
 
 export function setUp(){
     if(del == 0){
-        console.log("start " + Date.now())
+        // console.log("start " + Date.now())
+        startTime = Date.now()
         del = 1
     }
     //hope this works :)
@@ -129,17 +142,68 @@ export function setUp(){
     if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
-        if(j < 5000){
+        if(j < endJ){
             setUp()
-        } else{requestAnimationFrame(render2); console.log("end "  + Date.now())}
+        } else{
+            requestAnimationFrame(render2)
+            console.log(`time: ${Date.now()-startTime}`)
+            del = 0
+        }
         return
     }
 
     j = LOGIC.renderLoop(j) // runs through the binary loop once
-    if(j < 5000){
+    if(j < endJ){
             setUp()
-    } else{requestAnimationFrame(render2); console.log("end "  + Date.now())} // makes notes fall infinitely
+    } else{
+        requestAnimationFrame(render2)
+        console.log(`time: ${Date.now()-startTime}`)
+        del = 0
+    } // makes notes fall infinitely
 }
+
+export function setUp2(){
+    if(del == 0){
+        // console.log("start " + Date.now())
+        startTime = Date.now()
+        del = 1
+    }
+    //hope this works :)
+
+    rawDelay = LOGIC.getTimeDelay()
+    rawDelayAfter = LOGIC.getTimeDelayAfter()
+
+    const max = notes.length > 50 ? notes.length - 50 : 0
+
+
+    for(let i = notes.length - 1; i >= max; i--){
+        const note = notes[i]
+        if(note.on){
+            // adds stored delay to the length of the note
+            note.extendByDelay(rawDelayAfter)
+        }
+    }
+
+    if(rawDelay === 0){
+        j = LOGIC.renderLoop(j)
+        if(j < endJ){
+            setUp2()
+        } else {
+            console.log(`time: ${Date.now()-startTime}`)
+            del = 0
+        }
+        return
+    }
+
+    j = LOGIC.renderLoop(j) // runs through the binary loop once
+    if(j < endJ){
+            setUp2()
+    } else {
+        console.log(`time: ${Date.now()-startTime}`)
+        del = 0
+    }
+}
+
 
 export function render(time){
 
@@ -205,11 +269,17 @@ export function render(time){
 
 // makes notes fall infinitely
 export function render2(){
-
+    if(del == 1){
+        startTime = Date.now()
+        del = 2
+    }
     start = Date.now()
 
     notes.forEach((note, i) => {
         if(note.object.position.y < 0){
+            if(notes.length < 100){
+                startSetUp()
+            }
             note.remove()
             notes.splice(i, 1)
         }
@@ -219,6 +289,11 @@ export function render2(){
     renderer.render(scene, camera)
 
     const elapsed = Date.now() - start
+
+    if(del == 2){
+        console.log(`time: ${Date.now()-startTime}`)
+        del = 3
+    }
     if(elapsed > 1000/frameRate){
         requestAnimationFrame(render2)
     } else {

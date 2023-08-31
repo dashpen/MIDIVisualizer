@@ -50,7 +50,7 @@ export function getTimeDelayAfter() {
 // }
 
 document.getElementById("buttone2").addEventListener('click', playMid)
-document.getElementById("buttone3").addEventListener('click', PIANO.setUp)
+document.getElementById("buttone3").addEventListener('click', PIANO.startSetUp2)
 
 function playMid(){
     // playMidi(midiBuffer)
