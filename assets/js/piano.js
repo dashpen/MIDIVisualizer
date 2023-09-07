@@ -107,9 +107,9 @@ let endJ = 0
 let startTime = 0
 // export let j = 2400
 
-export function startSetUp(){
+export function startSetUp(renderloop){
     endJ = j + 1000
-    setUp2()
+    setUp(renderloop)
 }
 export function startSetUp2(){
     endJ = j + 400
@@ -117,7 +117,7 @@ export function startSetUp2(){
 }
 
 
-export function setUp(){
+export function setUp(renderloop){
     if(del == 0){
         // console.log("start " + Date.now())
         startTime = Date.now()
@@ -130,7 +130,6 @@ export function setUp(){
 
     const max = notes.length > 50 ? notes.length - 50 : 0
 
-
     for(let i = notes.length - 1; i >= max; i--){
         const note = notes[i]
         if(note.on){
@@ -142,10 +141,12 @@ export function setUp(){
     if(rawDelay === 0){
         j = LOGIC.renderLoop(j)
         start = -1
-        if(j < endJ){
-            setUp()
+        if(notes.length < 100){
+            setUp(renderloop)
         } else{
-            requestAnimationFrame(render2)
+            if(renderloop){
+                requestAnimationFrame(render2)
+            }
             console.log(`time: ${Date.now()-startTime}`)
             del = 0
         }
@@ -154,9 +155,11 @@ export function setUp(){
 
     j = LOGIC.renderLoop(j) // runs through the binary loop once
     if(j < endJ){
-            setUp()
+            setUp(renderloop)
     } else{
-        requestAnimationFrame(render2)
+        if(renderloop){
+            requestAnimationFrame(render2)
+        }
         console.log(`time: ${Date.now()-startTime}`)
         del = 0
     } // makes notes fall infinitely
@@ -277,8 +280,8 @@ export function render2(){
 
     notes.forEach((note, i) => {
         if(note.object.position.y < 0){
-            if(notes.length < 100){
-                startSetUp()
+            if(notes.length < 50){
+                startSetUp(false)
             }
             note.remove()
             notes.splice(i, 1)

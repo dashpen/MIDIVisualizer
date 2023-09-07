@@ -50,7 +50,7 @@ export function getTimeDelayAfter() {
 // }
 
 document.getElementById("buttone2").addEventListener('click', playMid)
-document.getElementById("buttone3").addEventListener('click', PIANO.startSetUp2)
+document.getElementById("buttone3").addEventListener('click', () => {PIANO.startSetUp(true)})
 
 function playMid(){
     // playMidi(midiBuffer)
@@ -73,19 +73,21 @@ function playMidi(buffer){
     const rawDivisions = view.getUint16(12, false) // used for tempo
     let givenPosition = 18; // skips the header chunk
 
-    let tracksPos = [22]
+    let curTracks = [22]
 
     {
         // gets the position of where the different tracks start to play them simultaneously
         let i = 18
         while(i < buffer.byteLength){
             i += view.getUint32(i, false) + 8
-            tracksPos.push(i)
+            curTracks.push(i)
         }
     }
-    tracksPos.pop()
+    curTracks.pop()
 
-    console.log(tracksPos)
+    console.log(curTracks)
+
+    
 
     // for(let i = 0; i < numTracks; i++){
     for(let i = 0; i < 1; i++){

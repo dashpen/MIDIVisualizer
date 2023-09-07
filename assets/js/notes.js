@@ -4,7 +4,7 @@ import {scene} from '../js/piano.js'
 import {cameraHeight as height} from '../js/piano.js'
 import {notes as storedNotes} from '../js/piano.js'
 
-const box = new THREE.PlaneGeometry(1, 1)
+const box = new THREE.PlaneGeometry(1.5, 1)
 
 
 const scaleMat = new THREE.Matrix4()
@@ -51,7 +51,7 @@ export class note {
     extendByDelay(delay){
         const length = delay / 50
         this.length += length
-        const geometry = new THREE.PlaneGeometry(1, this.length)
+        const geometry = new THREE.PlaneGeometry(1.5, this.length)
         this.object.geometry = geometry
         // this.object.scale.y *= length
         // this.object.translateY(length)
