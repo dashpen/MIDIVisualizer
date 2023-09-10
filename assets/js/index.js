@@ -33,6 +33,7 @@ export let delay2 = 0;
 export let tempo = 270000;
 export let temp = () => {return tempo/1000}
 export let divs = 480
+export let curPos = []
 
 export function getTimeDelay() {
     const beats = delay/480
@@ -83,80 +84,83 @@ function playMidi(buffer){
             curTracks.push(i)
         }
     }
+    
     curTracks.pop()
+
+    for(let i = 0; i < curTracks; i++){
+        curPos[i] = 0
+    }
 
     console.log(curTracks)
 
-    
+    // // for(let i = 0; i < numTracks; i++){
+    // for(let i = 0; i < 1; i++){
+    //     const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
+    //     console.log("length: " + length)
+    //     givenPosition += 4 // skips over the bytes describing the length
+    //     var j = givenPosition
+    //     // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
+    //     let eventType;
+    //     while(j < 500){ // last three bytes are supposed to signal the end of the track
 
-    // for(let i = 0; i < numTracks; i++){
-    for(let i = 0; i < 1; i++){
-        const length = view.getUint32(givenPosition, false) // length in bytes of the MTrk chunk (after the length itself)
-        console.log("length: " + length)
-        givenPosition += 4 // skips over the bytes describing the length
-        var j = givenPosition
-        // while(j < length + givenPosition - 3){ // last three bytes are supposed to signal the end of the track
-        let eventType;
-        while(j < 500){ // last three bytes are supposed to signal the end of the track
+    //         const getDelay = getVariableLength(j, data)
+    //         delay = getDelay.delay // delay can be multiple bytes
+    //         if(delay < 1000){
+    //             requestAnimationFrame(PIANO.render)
+    //             // PIANO.render()
+    //         }
 
-            const getDelay = getVariableLength(j, data)
-            delay = getDelay.delay // delay can be multiple bytes
-            if(delay < 1000){
-                requestAnimationFrame(PIANO.render)
-                // PIANO.render()
-            }
+    //         j = getDelay.index
+    //         console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
+    //         const dataByte1 = data[j]
+    //         j++
 
-            j = getDelay.index
-            console.log(`delay: ${delay} ; j: ${j.toString(16)}`)
-            const dataByte1 = data[j]
-            j++
-
-            if(dataByte1 === 0xff) {
-                // meta events
-                if(data[j] === 0x51){
-                    // tempo event
-                    const byte1 = data[j + 2] << 16
-                    const byte2 = data[j + 3] << 8
-                    const byte3 = data[j + 4] 
-                    tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
-                    console.log(`TEMPO: ${tempo}`)
-                }
-                j++
-                const length = data[j] // length of meta event
-                j++
-                console.log("Meta Event with length " + length)
-                j += length
-                continue;
-            }
-            if(dataByte1 & 0x80){
-                // data byte
-                eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
-                channel = dataByte1 & 0xf // last 4 bits are channel
-            } else {
-                j--;
-            }
-            // running status means that we don't have to update event type if its the same
-            console.log("event type " + eventType)
-            console.log("channel "+ channel)
-            const availableChannels = [0, 1, 2, 3, 4, 5, 6]
-            let validEvent = false
-            availableChannels.forEach((el) => {
-                if(el == eventType){
-                    validEvent = true
-                }
-            })
-            if(validEvent){
-                channelEventTypes[eventType].function(j, data)
-                j += channelEventTypes[eventType].indexToAdd
-            } else {
-                j++
-            }
-            // requestAnimationFrame(PIANO.render)
-            // PIANO.render()
-        }
-        givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
-        // requestAnimationFrame(PIANO.render2)
-    }
+    //         if(dataByte1 === 0xff) {
+    //             // meta events
+    //             if(data[j] === 0x51){
+    //                 // tempo event
+    //                 const byte1 = data[j + 2] << 16
+    //                 const byte2 = data[j + 3] << 8
+    //                 const byte3 = data[j + 4] 
+    //                 tempo = byte1 | byte2 | byte3 // tempo is in 3 bytes
+    //                 console.log(`TEMPO: ${tempo}`)
+    //             }
+    //             j++
+    //             const length = data[j] // length of meta event
+    //             j++
+    //             console.log("Meta Event with length " + length)
+    //             j += length
+    //             continue;
+    //         }
+    //         if(dataByte1 & 0x80){
+    //             // data byte
+    //             eventType = (dataByte1 >> 4) - 8 // first 4 bits are the event type (first bit is always a 1)
+    //             channel = dataByte1 & 0xf // last 4 bits are channel
+    //         } else {
+    //             j--;
+    //         }
+    //         // running status means that we don't have to update event type if its the same
+    //         console.log("event type " + eventType)
+    //         console.log("channel "+ channel)
+    //         const availableChannels = [0, 1, 2, 3, 4, 5, 6]
+    //         let validEvent = false
+    //         availableChannels.forEach((el) => {
+    //             if(el == eventType){
+    //                 validEvent = true
+    //             }
+    //         })
+    //         if(validEvent){
+    //             channelEventTypes[eventType].function(j, data)
+    //             j += channelEventTypes[eventType].indexToAdd
+    //         } else {
+    //             j++
+    //         }
+    //         // requestAnimationFrame(PIANO.render)
+    //         // PIANO.render()
+    //     }
+    //     givenPosition += length + 4 // adds the end of the data plus the bytes for 'MTrk'
+    //     // requestAnimationFrame(PIANO.render2)
+    // }
 }
 
 export function renderLoop(j){
@@ -170,6 +174,10 @@ export function renderLoop(j){
 
     if(dataByte1 === 0xff) {
         // meta events
+        if(midiArray[j] === 0x21){
+            // track end event
+
+        }
         if(midiArray[j] === 0x51){
             // tempo event
             const byte1 = midiArray[j + 2] << 16

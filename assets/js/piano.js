@@ -154,7 +154,7 @@ export function setUp(renderloop){
     }
 
     j = LOGIC.renderLoop(j) // runs through the binary loop once
-    if(j < endJ){
+    if(notes.length < 100){
             setUp(renderloop)
     } else{
         if(renderloop){
@@ -272,15 +272,11 @@ export function render(time){
 
 // makes notes fall infinitely
 export function render2(){
-    if(del == 1){
-        startTime = Date.now()
-        del = 2
-    }
     start = Date.now()
 
     notes.forEach((note, i) => {
         if(note.object.position.y < 0){
-            if(notes.length < 50){
+            if(notes[notes.length - 1].object.position.y < 60){
                 startSetUp(false)
             }
             note.remove()
@@ -292,14 +288,12 @@ export function render2(){
     renderer.render(scene, camera)
 
     const elapsed = Date.now() - start
-
-    if(del == 2){
-        console.log(`time: ${Date.now()-startTime}`)
-        del = 3
-    }
+    console.log(`now: ${Date.now()} start: ${start} elapsed: ${elapsed}`)
     if(elapsed > 1000/frameRate){
         requestAnimationFrame(render2)
+        // console.log(elapsed)
     } else {
         setTimeout(requestAnimationFrame, 1000/frameRate - elapsed, render2)
+        // requestAnimationFrame(render2)
     }
 }
